@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Habit Tracker</title>
+    <link rel="icon" type="image/x-icon" href="images/starfish.png" />
+    <link href="https://fonts.cdnfonts.com/css/kindegarten" rel="stylesheet"/>
+    <link href="css/style.css" rel="stylesheet" type="text/css"/>
+
+    <style>
+        /* CSS per disattivare i div giorno vuoti */
+        .day:empty {
+            pointer-events: none;
+            background-color: transparent;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<!-- TITLE AND SUBTITLE -->
+<h1 id="title">Month</h1>
+<h2 id="subtitle">Monthly Habit Tracker</h2>
+
+<!-- CALENDAR AREA -->
+<div id="calendarContainer">
+    <div id="calendarDiv">
+        <div id="calendarHeading">
+            <p id="habitTitle">Click to set your habit</p>
+            <p id="totalDays">0/31</p>
+        </div>
+        <div id="calendarContent">
+            <div id="tracker">
+                <div class="days"></div>
+                <div class="days"></div>
+                <div class="days"></div>
+                <div class="days"></div>
+                <div class="days"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<button id="resetButton">Reset</button>
+
+<script>
+    const date = new Date();
+    const currentMonth = date.getMonth();
+    const currentDate = date.getDate();
+    const currentYear = date.getFullYear();
+
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    const title = document.getElementById("title");
+    title.textContent = months[currentMonth];
+
+    const habitTitle = document.getElementById("habitTitle");
+    habitTitle.onclick = function () {
+        const newHabit = prompt("What's your habit?", habitTitle.textContent);
+        habitTitle.textContent = newHabit?.trim() || "Click to set your habit";
+    };
+
+    const daysInMonthList = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    // Gestione anno bisestile
+    if (currentMonth === 1 &&
+        ((currentYear % 4 === 0 && currentYear % 100 !== 0) || currentYear % 400 === 0)) {
+        daysInMonthList[1] = 29;
+    }
+
+    const daysInThisMonth = daysInMonthList[currentMonth];
+    let daysCompleted = 0;
+    const totalDays = document.getElementById("totalDays");
+    totalDays.textContent = "0/" + daysInThisMonth;
+
+    // Riempi il calendario
+    const daysRows = document.getElementsByClassName("days");
+    let dayCount = 0;
+
+    for (let row = 0; row < daysRows.length; row++) {
+        for (let col = 0; col < 7; col++) {
+            const dayDiv = document.createElement("div");
+            dayDiv.classList.add("day");
+
+            if (dayCount < daysInThisMonth) {
+                dayDiv.textContent = dayCount + 1;
+                dayDiv.id = "day" + (dayCount + 1);
+                // Evidenzia il giorno corrente
+                if (dayCount === currentDate - 1) {
+                    dayDiv.style.color = "rgb(234, 1, 144)";
+                    dayDiv.style.border = "2px solid black";
+                }
+                daysRows[row].appendChild(dayDiv);
+                dayCount++;
+            } else {
+                // Giorni extra oltre la fine del mese
+                dayDiv.textContent = "";
+                daysRows[row].appendChild(dayDiv);
+            }
+        }
+    }
+
+    // Controlla lo stato dei giorni nel localStorage
+    for (let i = 0; i < daysInThisMonth; i++) {
+        const key = `${currentMonth + 1}-${i + 1}-${currentYear}`;
+        let value = localStorage.getItem(key);
+
+        if (value === null) {
+            localStorage.setItem(key, "false");
+        } else if (value === "true") {
+            const dayDiv = document.getElementById("day" + (i + 1));
+            if (dayDiv) {
+                dayDiv.style.backgroundColor = "pink";
+                daysCompleted++;
+            }
+        }
+    }
+    totalDays.textContent = `${daysCompleted}/${daysInThisMonth}`;
+
+    // Aggiungi eventi click a tutti i giorni validi
+    const dayDivs = document.querySelectorAll(".day");
+    dayDivs.forEach(dayDiv => {
+        const num = parseInt(dayDiv.textContent);
+        if (!isNaN(num)) {
+            dayDiv.addEventListener("click", () => {
+                const key = `${currentMonth + 1}-${num}-${currentYear}`;
+                let current = localStorage.getItem(key);
+
+                if (current === "false") {
+                    dayDiv.style.backgroundColor = "pink";
+                    localStorage.setItem(key, "true");
+                    daysCompleted++;
+                } else {
+                    dayDiv.style.backgroundColor = "white";
+                    localStorage.setItem(key, "false");
+                    daysCompleted--;
+                }
+
+                totalDays.textContent = `${daysCompleted}/${daysInThisMonth}`;
+                if (daysCompleted === currentDate) {
+                    alert("Great progress!");
+                }
+            });
+        }
+    });
+
+    /*RESET BUTTON*/
+    const resetButton = document.getElementById("resetButton");
+    resetButton.onclick = () => {
+        if (!confirm("Sei sicuro di voler resettare i progressi di questo mese?")) return;
+
+        for (let i = 0; i < daysInThisMonth; i++) {
+            const key = `${currentMonth + 1}-${i + 1}-${currentYear}`;
+            localStorage.setItem(key, "false");
+
+            const dayDiv = document.getElementById("day" + (i + 1));
+            if (dayDiv) {
+                dayDiv.style.backgroundColor = "white";
+            }
+        }
+
+        daysCompleted = 0;
+        totalDays.textContent = `${daysCompleted}/${daysInThisMonth}`;
+    };
+</script>
+</body>
+</html>
